@@ -1,0 +1,166 @@
+---
+title: "Sustainable Investing"
+output: 
+  flexdashboard::flex_dashboard:
+    
+    logo: SF.jpeg
+    
+    
+   
+    vertical_layout: fill
+   
+    includes:
+      after_body: footer.html
+---
+
+```{r setup, include=FALSE}
+# Importing libraries
+library(flexdashboard)# Dashboard package
+library(highcharter) # Interactive data visualizations
+library(plotly) # Interactive data visualizations
+library(viridis) # Color gradients
+library(tidyverse) # Metapackge
+library(countrycode) # Converts country names/codes
+library(crosstalk) # Provides interactivity for HTML widgets
+library(gt) # For table representation
+library(htmltools) # For html ui 
+library(sf) # working with simple geographic features in r 
+library(ggrepel) # ggplot2 extention for overlapping text label
+library(rjson) # JSON Reader
+library(DT) #Displaying Data tables 
+
+
+```
+
+
+```{r}
+#Importing data 
+my_data <-read.csv("sustainability_scores.csv")
+
+#Removing duplicates
+my_data <- my_data %>%
+  distinct(Company.Name, .keep_all= TRUE) 
+```
+
+
+ESG Dashboard {data-icon="fa-envira"}
+================================================================================
+
+## Row 1 {data-height=110, data-width=50}
+### Total companies available
+
+```{r}
+valueBox(nrow(my_data), icon = "fa-industry", color="rgb(100,100,100)")
+```
+
+### Companies with AAA ESG Rating
+
+```{r}
+my_data_AAA <- dplyr::filter(my_data, Overall.ESG.RATING=='AAA')
+valueBox(nrow(my_data_AAA), icon = "fa-heart", color="rgb(0,255,0)")
+
+```
+
+### Companies with AA ESG Rating
+
+```{r}
+my_data_AA <- dplyr::filter(my_data, Overall.ESG.RATING=='AA')
+valueBox(nrow(my_data_AA), icon = "fa-life-ring",color="rgb(152,251,152)")
+```
+    
+
+Column {.tabset .tabset-fade data-width=600}
+-----------------------------------------------------------------------
+
+```{r}
+my_data_pie <- my_data %>% 
+    group_by(Overall.ESG.RATING) %>%
+    summarise(total = n())
+
+hchart(my_data_pie, "pie", 
+       hcaes(x = Overall.ESG.RATING, y = total),
+       name = "Number of Companies") %>%
+  hc_title(text = "Company Distribution by ESG Rating")
+  
+```
+
+### 
+<strong>Recommended companies to buy </strong>
+
+```{r}
+
+
+
+my_data_view <- my_data %>%
+  select(Company.Name, Country, Sector, Overall.ESG.RATING, Overall.ESG.SCORE) %>%
+  filter(Overall.ESG.RATING== "AAA") %>%
+  arrange(desc(Overall.ESG.SCORE))
+
+
+datatable(my_data_view)
+
+```
+
+
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+#Colours 
+custom_colors <- viridis::plasma(n=10)
+#Avg ESG rating my country 
+my_data %>%
+  group_by(Country) %>%
+  summarize(Overall.ESG.SCORE = mean(Overall.ESG.SCORE)) %>%
+  arrange(desc(Overall.ESG.SCORE)) %>%
+  head(10) %>%
+  hchart('bar', hcaes(x=Country, y=Overall.ESG.SCORE, color=custom_colors)) %>%
+  hc_add_theme(hc_theme_google()) %>%
+    hc_tooltip(pointFormat = '<b>Avg ESG Score: </b> {point.y} <br>') %>%
+   hc_title(text= 'Top 10 countries to invest', 
+           style = list(fontsize = '25px', fontweight='bold')) %>%
+  hc_subtitle(text='By ESG Score',
+              style= list(fontsize='16px'))
+```
+
+### 
+
+```{r}
+#Colours 
+custom_colors <- viridis::turbo(n=10)
+#Avg ESG rating my country 
+my_data %>%
+  arrange(desc(Overall.ESG.SCORE)) %>%
+  head(10) %>%
+  hchart('bar', hcaes(x=Company.Name, y=Overall.ESG.SCORE, color=custom_colors)) %>%
+  hc_add_theme(hc_theme_google()) %>%
+    hc_tooltip(pointFormat = '<b>Avg ESG Score: </b> {point.y} <br>') %>%
+   hc_title(text= 'Top 10 companies to invest', 
+           style = list(fontsize = '25px', fontweight='bold')) %>%
+  hc_subtitle(text='By ESG Score',
+              style= list(fontsize='16px'))
+```
+
+Search Data {data-icon="fa-table"}
+===============================================================================
+###
+```{r}
+
+datatable(my_data)
+```
+
+
+About {data-icon="fa-info-circle"}
+=======================================================================
+
+
+
+Technical Details {data-icon="fa-info-circle"}
+=======================================================================
+
+
+
